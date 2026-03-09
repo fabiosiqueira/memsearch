@@ -88,18 +88,20 @@ To make it permanent, add the export to your `~/.bashrc`, `~/.zshrc`, or equival
 
 ### "UPDATE: v0.x.x available"
 
-The plugin checks PyPI at session start (2s timeout) and shows this hint when a newer version exists. How to upgrade depends on your installation method:
+The plugin checks PyPI at session start (2s timeout) and shows this hint when a newer version exists. The hint now includes the exact upgrade command for your installation method:
 
-```bash
-# If installed via uv tool
-uv tool upgrade memsearch
-
-# If installed via pip
-pip install --upgrade memsearch
-
-# If using uvx (auto-upgraded on each session -- you shouldn't see this)
-uvx --upgrade memsearch --version
 ```
+UPDATE: v0.1.15 available — run: pip install --upgrade memsearch
+UPDATE: v0.1.15 available — run: uv tool upgrade memsearch
+```
+
+The plugin auto-detects how memsearch was installed:
+
+| Install method | Upgrade command shown |
+|---|---|
+| `pip install memsearch` | `pip install --upgrade memsearch` |
+| `uv tool install memsearch` | `uv tool upgrade memsearch` |
+| `uvx` (auto) | `uvx --upgrade memsearch --version` |
 
 !!! note
     `uvx` users get automatic upgrades -- the plugin runs `uvx --upgrade` on every bootstrap. The `UPDATE` hint primarily helps `pip`/`uv tool` users who have no automatic update mechanism.

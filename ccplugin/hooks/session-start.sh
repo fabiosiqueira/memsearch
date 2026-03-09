@@ -48,7 +48,18 @@ if [ -n "$VERSION" ]; then
   _PYPI_JSON=$(curl -s --max-time 2 https://pypi.org/pypi/memsearch/json 2>/dev/null || true)
   LATEST=$(_json_val "$_PYPI_JSON" "info.version" "")
   if [ -n "$LATEST" ] && [ "$LATEST" != "$VERSION" ]; then
-    UPDATE_HINT=" | UPDATE: v${LATEST} available"
+    # Detect install method to suggest the right upgrade command
+    if [ "$MEMSEARCH_CMD" = "uvx memsearch" ]; then
+      UPGRADE_CMD="uvx --upgrade memsearch --version"
+    else
+      _MS_PATH=$(command -v memsearch 2>/dev/null || true)
+      if [[ "$_MS_PATH" == *"uv/tools"* ]]; then
+        UPGRADE_CMD="uv tool upgrade memsearch"
+      else
+        UPGRADE_CMD="pip install --upgrade memsearch"
+      fi
+    fi
+    UPDATE_HINT=" | UPDATE: v${LATEST} available — run: ${UPGRADE_CMD}"
   fi
 fi
 

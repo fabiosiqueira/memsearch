@@ -528,7 +528,7 @@ The SessionStart hook also loads the 2 most recent daily logs as `additionalCont
 **Update available:**
 
 ```
-[memsearch v0.1.11] embedding: openai/text-embedding-3-small | milvus: ~/.memsearch/milvus.db | UPDATE: v0.1.12 available
+[memsearch v0.1.11] embedding: openai/text-embedding-3-small | milvus: ~/.memsearch/milvus.db | UPDATE: v0.1.12 available — run: pip install --upgrade memsearch
 ```
 
 #### "ERROR: \<KEY\> not set — memory search disabled"
@@ -557,18 +557,18 @@ To make it permanent, add the export to your `~/.bashrc`, `~/.zshrc`, or equival
 
 #### "UPDATE: v0.x.x available"
 
-The plugin checks PyPI at session start (2s timeout) and shows this hint when a newer version exists. How to upgrade depends on your installation method:
+The plugin checks PyPI at session start (2s timeout) and shows this hint when a newer version exists. The hint now includes the exact upgrade command, auto-detected from your installation method:
 
-```bash
-# If installed via uv tool
-uv tool upgrade memsearch
-
-# If installed via pip
-pip install --upgrade memsearch
-
-# If using uvx (auto-upgraded on each session — you shouldn't see this)
-uvx --upgrade memsearch --version
 ```
+UPDATE: v0.1.15 available — run: pip install --upgrade memsearch
+UPDATE: v0.1.15 available — run: uv tool upgrade memsearch
+```
+
+| Install method | Upgrade command shown |
+|---|---|
+| `pip install memsearch` | `pip install --upgrade memsearch` |
+| `uv tool install memsearch` | `uv tool upgrade memsearch` |
+| `uvx` (auto) | `uvx --upgrade memsearch --version` |
 
 > **Note:** `uvx` users get automatic upgrades — the plugin runs `uvx --upgrade` on every bootstrap. The `UPDATE` hint primarily helps `pip`/`uv tool` users who have no automatic update mechanism.
 
