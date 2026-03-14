@@ -39,7 +39,7 @@ def truncate(text, max_chars):
     return text[:max_chars] + "...(truncated)"
 
 def find_last_turn_start(lines):
-    """Find the index of the last real user message (content is a plain string)."""
+    """Find the index of the last real user message (string or array-format content)."""
     for i in range(len(lines) - 1, -1, -1):
         try:
             obj = json.loads(lines[i])
@@ -47,6 +47,10 @@ def find_last_turn_start(lines):
                 content = obj.get("message", {}).get("content")
                 if isinstance(content, str) and content.strip():
                     return i
+                if isinstance(content, list):
+                    for block in content:
+                        if isinstance(block, dict) and block.get("type") == "text" and block.get("text", "").strip():
+                            return i
         except Exception:
             pass
     return None
@@ -74,7 +78,11 @@ def format_turn(lines):
                 for block in content:
                     if not isinstance(block, dict):
                         continue
-                    if block.get("type") == "tool_result":
+                    if block.get("type") == "text":
+                        text = block.get("text", "").strip()
+                        if text:
+                            output.append(f"[Human]: {text}")
+                    elif block.get("type") == "tool_result":
                         result = block.get("content", "")
                         if isinstance(result, list):
                             texts = []
