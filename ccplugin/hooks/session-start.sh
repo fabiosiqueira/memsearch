@@ -144,23 +144,47 @@ fi
 
 context=""
 
-# Find the 2 most recent daily log files (sorted by filename descending)
-recent_files=$(ls -1 "$MEMORY_DIR"/*.md 2>/dev/null | sort -r | head -2)
+# Progressive disclosure: extract compact index from <!-- index:HH:MM ... --> comments.
+# ~10x token savings vs. raw tail-30 injection. Falls back to tail-30 for pre-fork logs.
+recent_files=$(ls -1 "$MEMORY_DIR"/*.md 2>/dev/null | sort -r | head -8)
+index_lines=""
 
 if [ -n "$recent_files" ]; then
-  context="# Recent Memory\n\n"
   for f in $recent_files; do
-    basename_f=$(basename "$f")
-    # Read last ~30 lines from each file
-    content=$(tail -30 "$f" 2>/dev/null || true)
-    if [ -n "$content" ]; then
-      context+="## $basename_f\n$content\n\n"
-    fi
+    basename_f=$(basename "$f" .md)
+    while IFS= read -r line; do
+      # Format: <!-- index:HH:MM summary text here -->
+      session_time=$(echo "$line" | grep -oE 'index:[0-9]{2}:[0-9]{2}' | sed 's/index://')
+      index_text=$(echo "$line" | sed 's/<!-- index:[0-9][0-9]:[0-9][0-9] //;s/ -->//')
+      if [ -n "$index_text" ] && [ -n "$session_time" ]; then
+        index_lines+="- ${basename_f} ${session_time}: ${index_text}\n"
+      fi
+    done < <(grep '<!-- index:' "$f" 2>/dev/null)
   done
+
+  # Cap at 8 entries to keep token budget ~100-200
+  index_lines=$(printf '%b' "$index_lines" | head -8)
+fi
+
+if [ -n "$index_lines" ]; then
+  context="# Recent Memory\n\n## Index (use memory-recall skill para detalhes)\n${index_lines}\n"
+else
+  # Fallback: no index comments found (pre-fork logs), use original tail-30
+  fallback_files=$(ls -1 "$MEMORY_DIR"/*.md 2>/dev/null | sort -r | head -2)
+  if [ -n "$fallback_files" ]; then
+    context="# Recent Memory\n\n"
+    while IFS= read -r f; do
+      basename_f=$(basename "$f")
+      content=$(tail -30 "$f" 2>/dev/null || true)
+      if [ -n "$content" ]; then
+        context+="## $basename_f\n$content\n\n"
+      fi
+    done <<< "$fallback_files"
+  fi
 fi
 
 # Note: Detailed memory search is handled by the memory-recall skill (pull-based).
-# The cold-start context above gives Claude enough awareness of recent sessions
+# The compact index above gives Claude enough awareness of recent sessions
 # to decide when to invoke the skill for deeper recall.
 
 if [ -n "$context" ]; then
