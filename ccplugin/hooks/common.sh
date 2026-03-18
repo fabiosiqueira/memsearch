@@ -7,6 +7,24 @@ set -euo pipefail
 # Read stdin JSON into $INPUT
 INPUT="$(cat)"
 
+# Session suffix: first 8 chars of session_id from hook input JSON.
+# Used to create per-session memory files (e.g. 2026-03-18_cecdc830.md).
+# Falls back to empty string — callers must handle "" as "no suffix" (daily file).
+SESSION_SUFFIX=""
+if [ -n "$INPUT" ]; then
+  if command -v jq &>/dev/null; then
+    _sid=$(printf '%s' "$INPUT" | jq -r '.session_id // empty' 2>/dev/null || true)
+  else
+    _sid=$(printf '%s' "$INPUT" | python3 -c "
+import json, sys
+try: print(json.load(sys.stdin).get('session_id', ''))
+except: print('')
+" 2>/dev/null || true)
+  fi
+  SESSION_SUFFIX="${_sid:0:8}"
+fi
+export SESSION_SUFFIX
+
 # Ensure common user bin paths are in PATH (hooks may run in a minimal env)
 for p in "$HOME/.local/bin" "$HOME/.cargo/bin" "$HOME/bin" "/usr/local/bin"; do
   [[ -d "$p" ]] && [[ ":$PATH:" != *":$p:"* ]] && export PATH="$p:$PATH"

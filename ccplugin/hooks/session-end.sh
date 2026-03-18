@@ -12,7 +12,10 @@ source "$SCRIPT_DIR/common.sh"
 
 ensure_memory_dir
 TODAY=$(date +%Y-%m-%d)
-MEMORY_FILE="$MEMORY_DIR/$TODAY.md"
+_SUFFIX="${SESSION_SUFFIX:+_${SESSION_SUFFIX}}"
+MEMORY_FILE="$MEMORY_DIR/${TODAY}${_SUFFIX}.md"
+# Fallback to daily file for sessions without a suffix (legacy or edge cases)
+[ -f "$MEMORY_FILE" ] || MEMORY_FILE="$MEMORY_DIR/${TODAY}.md"
 
 if [ -f "$MEMORY_FILE" ]; then
   # Find the last ## Session heading (the session that just ended)

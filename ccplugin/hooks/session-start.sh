@@ -2,6 +2,23 @@
 # SessionStart hook: start watch singleton + inject recent memory context.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Capture session_id from stdin BEFORE exec < /dev/null discards it.
+# common.sh does INPUT="$(cat)" which blocks if stdin is never closed on macOS.
+# session-start.sh does not use the rest of INPUT, so discarding after extraction is safe.
+_HOOK_INPUT="$(cat)"
+if command -v jq &>/dev/null; then
+  _SID_RAW=$(printf '%s' "$_HOOK_INPUT" | jq -r '.session_id // empty' 2>/dev/null || true)
+else
+  _SID_RAW=$(printf '%s' "$_HOOK_INPUT" | python3 -c "
+import json, sys
+try: print(json.load(sys.stdin).get('session_id', ''))
+except: print('')
+" 2>/dev/null || true)
+fi
+export SESSION_SUFFIX="${_SID_RAW:0:8}"
+
+exec < /dev/null
 source "$SCRIPT_DIR/common.sh"
 
 # Bootstrap: if memsearch not available, install uv and warm up uvx cache
@@ -95,11 +112,12 @@ fi
 PROJECT_BASENAME=$(basename "${CLAUDE_PROJECT_DIR:-.}")
 COLLECTION_DESC="${PROJECT_BASENAME} | ${PROVIDER}/${MODEL:-default}"
 
-# Write session heading to today's memory file
+# Write session heading to session-scoped memory file
 ensure_memory_dir
 TODAY=$(date +%Y-%m-%d)
 NOW=$(date +%H:%M)
-MEMORY_FILE="$MEMORY_DIR/$TODAY.md"
+_SUFFIX="${SESSION_SUFFIX:+_${SESSION_SUFFIX}}"
+MEMORY_FILE="$MEMORY_DIR/${TODAY}${_SUFFIX}.md"
 if [ ! -f "$MEMORY_FILE" ] || ! grep -qF "## Session $NOW" "$MEMORY_FILE"; then
   echo -e "\n## Session $NOW\n" >> "$MEMORY_FILE"
 fi

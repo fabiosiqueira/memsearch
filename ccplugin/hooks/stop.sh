@@ -56,10 +56,12 @@ fi
 # Determine today's date and current time
 TODAY=$(date +%Y-%m-%d)
 NOW=$(date +%H:%M)
-MEMORY_FILE="$MEMORY_DIR/$TODAY.md"
 
-# Extract session ID and last user turn UUID for progressive disclosure anchors
+# Extract session ID from transcript path — used as file suffix for isolation
 SESSION_ID=$(basename "$TRANSCRIPT_PATH" .jsonl)
+_SESS_SUFFIX="${SESSION_ID:0:8}"
+_SUFFIX="${_SESS_SUFFIX:+_${_SESS_SUFFIX}}"
+MEMORY_FILE="$MEMORY_DIR/${TODAY}${_SUFFIX}.md"
 LAST_USER_TURN_UUID=$(python3 -c "
 import json, sys
 uuid = ''
